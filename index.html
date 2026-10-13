@@ -238,7 +238,7 @@
     let remindersEndTimeout = null;
     let remindersActive = false;
 
-    // Фразы на фоне
+    // Фоновые фразы
     const motivationalPhrases = [
       "У тебя всё получится!", "Ты лучшая!", "Ты сильнее каждый день!",
       "Доверяй себе!", "Ура победам!", "Не бойся начинать!", "Действуй сегодня!",
@@ -273,7 +273,6 @@
       osc.frequency.value = freq;
       osc.connect(gain);
       gain.connect(ctx.destination);
-      gain.value = 0.14;
       gain.gain.value = 0.14;
       osc.start(when);
       gain.gain.setValueAtTime(0.0, when);
@@ -334,16 +333,19 @@
       });
     });
 
-    // Инициализация после загрузки DOM
+    // Привязки после загрузки DOM
     document.addEventListener('DOMContentLoaded', () => {
-      // Объявление элементов
+      // Элементы таймера
       const startBtn = document.getElementById('startBtn');
       const pauseBtn = document.getElementById('pauseBtn');
       const resetBtn = document.getElementById('resetBtn');
+      // Элементы напоминаний
       const startRemindersBtn = document.getElementById('startRemindersBtn');
       const stopRemindersBtn = document.getElementById('stopRemindersBtn');
+      const remIntervalInput = document.getElementById('remInterval');
+      const remDurationInput = document.getElementById('remDuration');
 
-      // Старт таймера
+      // Таймер: старт
       startBtn.addEventListener('click', () => {
         const minsFromInput = parseInt(document.getElementById('minutes').value, 10) || 0;
         const secsFromInput = parseInt(document.getElementById('seconds').value, 10) || 0;
@@ -372,7 +374,7 @@
         resetBtn.disabled = false;
       });
 
-      // Пауза
+      // Таймер: пауза
       pauseBtn.addEventListener('click', () => {
         if (timerId){
           clearInterval(timerId);
@@ -383,7 +385,7 @@
         }
       });
 
-      // Сброс
+      // Таймер: сброс
       resetBtn.addEventListener('click', () => {
         if (timerId) clearInterval(timerId);
         timerId = null;
@@ -397,13 +399,16 @@
         resetBtn.disabled = true;
       });
 
-      // Напоминания: запуск/остановка
+      // Напоминания: запуск
       startRemindersBtn.addEventListener('click', () => {
-        const interval = parseInt(document.getElementById('remInterval').value, 10);
-        const duration = parseInt(document.getElementById('remDuration').value, 10);
-        if (isNaN(interval) || interval <= 0 || isNaN(duration) || duration <= 0) return;
+        const interval = parseInt(remIntervalInput.value, 10);
+        const duration = parseInt(remDurationInput.value, 10);
+        if (isNaN(interval) || interval <= 0 || isNaN(duration) || duration <= 0) {
+          showToast('Некорректные значения интервала/длительности');
+          return;
+        }
 
-        // остановить если уже активны
+        // Если уже активны, остановим перед новой настройкой
         if (remindersActive) stopReminders();
 
         remIntervalMin = interval;
@@ -420,6 +425,7 @@
         showToast(XXXINLINECODEXXX0XXXINLINECODEXXX);
       });
 
+      // Напоминания: остановка
       stopRemindersBtn.addEventListener('click', stopReminders);
 
       function stopReminders(){
@@ -432,72 +438,75 @@
         document.getElementById('stopRemindersBtn').disabled = true;
         showToast("Напоминания остановлены");
       }
+
+      // Встроенная утилита уведомления
+      function showToast(text){
+        const el = document.createElement('div');
+        el.className = 'toast';
+        el.textContent = text;
+        document.body.appendChild(el);
+        setTimeout(() => {
+          el.style.opacity = '0';
+          setTimeout(() => el.remove(), 400);
+        }, 3200);
+      }
+
+      // Уведомления через Notification API
+      function triggerReminder(){
+        const timeStr = new Date().toLocaleTimeString();
+        const msg = XXXINLINECODEXXX1XXXINLINECODEXXX;
+        if (window.Notification && Notification.permission === "granted") {
+          new Notification("Напоминание", { body: msg });
+        } else if (window.Notification && Notification.permission === "default") {
+          Notification.requestPermission().then(p => {
+            if (p === "granted") new Notification("Напоминание", { body: msg });
+            else showToast(msg);
+          });
+        } else {
+          showToast(msg);
+        }
+        // звук сигнала напоминания
+        triggerBeep();
+      }
+
+      function triggerBeep(){
+        ensureAudio();
+        const t0 = audioCtx.currentTime;
+        // короткая последовательность нот
+        playTone(392.00, 0.12, t0);
+        playTone(493.88, 0.12, t0 + 0.15);
+        playTone(587.33, 0.18, t0 + 0.30);
+      }
+
+      // Фоновые фразы
+      function generateBackgroundPhrases() {
+        const container = document.querySelector('.bg-phrases');
+        container.innerHTML = '';
+        const count = 80;
+        for (let i = 0; i < count; i++) {
+          const span = document.createElement('span');
+          span.className = 'phrase';
+          const text = motivationalPhrases[Math.floor(Math.random() * motivationalPhrases.length)];
+          span.textContent = text;
+          span.style.left = Math.random() * 100 + '%';
+          span.style.top = Math.random() * 100 + '%';
+          const size = 14 + Math.random() * 28;
+          span.style.fontSize = size + 'px';
+          span.style.opacity = (0.12 + Math.random() * 0.6).toFixed(2);
+          span.style.transform = 'rotate(' + (Math.random() * 40 - 20) + 'deg)';
+          container.appendChild(span);
+        }
+      }
+
+      // Инициализация аудио и фонов
+      window.addEventListener('load', generateBackgroundPhrases);
+
+      // Замена минимизации ошибок: если попытаться вызвать до загрузки элементов — ничего не произойдёт
+      // Можно включить дополнительный консольный вывод для отладки, если нужно.
     });
 
-    // Утилиты
-    function showToast(text){
-      const el = document.createElement('div');
-      el.className = 'toast';
-      el.textContent = text;
-      document.body.appendChild(el);
-      setTimeout(() => {
-        el.style.opacity = '0';
-        setTimeout(() => el.remove(), 400);
-      }, 3200);
-    }
-
-    function triggerReminder(){
-      const timeStr = new Date().toLocaleTimeString();
-      const msg = XXXINLINECODEXXX1XXXINLINECODEXXX;
-      if (window.Notification && Notification.permission === "granted") {
-        new Notification("Напоминание", { body: msg });
-      } else if (window.Notification && Notification.permission === "default") {
-        Notification.requestPermission().then(p => {
-          if (p === "granted") new Notification("Напоминание", { body: msg });
-          else showToast(msg);
-        });
-      } else {
-        showToast(msg);
-      }
-      // сигнал
-      triggerBeep();
-    }
-
-    function triggerBeep(){
-      ensureAudio();
-      const t0 = audioCtx.currentTime;
-      // короткая последовательность
-      playTone(392.00, 0.12, t0);
-      playTone(493.88, 0.12, t0 + 0.15);
-      playTone(587.33, 0.18, t0 + 0.30);
-    }
-
-    // Фоновые фразы
-    function generateBackgroundPhrases() {
-      const container = document.querySelector('.bg-phrases');
-      container.innerHTML = '';
-      const count = 80;
-      for (let i = 0; i < count; i++) {
-        const span = document.createElement('span');
-        span.className = 'phrase';
-        const text = motivationalPhrases[Math.floor(Math.random() * motivationalPhrases.length)];
-        span.textContent = text;
-        span.style.left = Math.random() * 100 + '%';
-        span.style.top = Math.random() * 100 + '%';
-        const size = 14 + Math.random() * 28;
-        span.style.fontSize = size + 'px';
-        span.style.opacity = (0.12 + Math.random() * 0.6).toFixed(2);
-        span.style.transform = 'rotate(' + (Math.random() * 40 - 20) + 'deg)';
-        container.appendChild(span);
-      }
-    }
-
-    // Запуск фраз после загрузки
-    window.addEventListener('load', generateBackgroundPhrases);
-
-    // Инициализация аудио
-    // Небольшой дебаг-подсказчик в консоль (опционально)
-    // console.log('Готово: таймер и напоминания и фон работают.');
+    // Гарантированно обновление дисплея на старте
+    updateDisplay(0);
   </script>
 </body>
 </html>

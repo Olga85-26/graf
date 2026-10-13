@@ -10,7 +10,6 @@
       --btn-hover: #6a3d9f;  /* светлее для hover */
     }
 
-    /* Фиолетовый фон с мотивирующими фразами на фоне */
     html, body { height: 100%; }
     body {
       margin: 0;
@@ -24,7 +23,6 @@
       overflow: hidden;
     }
 
-    /* Декоративный фон с фразами (слой) */
     .bg-phrases {
       position: fixed;
       top: 0; left: 0;
@@ -217,7 +215,7 @@
     </div>
 
     <div class="hint" style="text-align:center; color:#e7d3b0;">
-      Время отображается в формате MM:SS. По окончании основного таймера звучит мелодия.
+      Время отображается в формате MM:SS. По окончаии основного таймера звучит мелодия.
     </div>
   </div>
 
@@ -339,7 +337,7 @@
       const startBtn = document.getElementById('startBtn');
       const pauseBtn = document.getElementById('pauseBtn');
       const resetBtn = document.getElementById('resetBtn');
-      // Элементы напоминаний
+      // Напоминания
       const startRemindersBtn = document.getElementById('startRemindersBtn');
       const stopRemindersBtn = document.getElementById('stopRemindersBtn');
       const remIntervalInput = document.getElementById('remInterval');
@@ -428,6 +426,8 @@
       // Напоминания: остановка
       stopRemindersBtn.addEventListener('click', stopReminders);
 
+      // Реализация функций ниже вынесена в глобальный контекст
+      // чтобы stopReminders и triggerReminder были доступны здесь
       function stopReminders(){
         if (remindersIntervalId) clearInterval(remindersIntervalId);
         remindersIntervalId = null;
@@ -439,7 +439,7 @@
         showToast("Напоминания остановлены");
       }
 
-      // Встроенная утилита уведомления
+      // Утилиты
       function showToast(text){
         const el = document.createElement('div');
         el.className = 'toast';
@@ -451,10 +451,11 @@
         }, 3200);
       }
 
-      // Уведомления через Notification API
       function triggerReminder(){
+        // Временная метка и сообщение
         const timeStr = new Date().toLocaleTimeString();
         const msg = XXXINLINECODEXXX1XXXINLINECODEXXX;
+
         if (window.Notification && Notification.permission === "granted") {
           new Notification("Напоминание", { body: msg });
         } else if (window.Notification && Notification.permission === "default") {
@@ -465,20 +466,21 @@
         } else {
           showToast(msg);
         }
-        // звук сигнала напоминания
+
+        // звуковой сигнал
         triggerBeep();
       }
 
       function triggerBeep(){
         ensureAudio();
         const t0 = audioCtx.currentTime;
-        // короткая последовательность нот
+        // простая мелодия из трёх нот
         playTone(392.00, 0.12, t0);
         playTone(493.88, 0.12, t0 + 0.15);
         playTone(587.33, 0.18, t0 + 0.30);
       }
 
-      // Фоновые фразы
+      // Фоновые фразы (опционально, можно отключить)
       function generateBackgroundPhrases() {
         const container = document.querySelector('.bg-phrases');
         container.innerHTML = '';
@@ -498,15 +500,23 @@
         }
       }
 
-      // Инициализация аудио и фонов
       window.addEventListener('load', generateBackgroundPhrases);
-
-      // Замена минимизации ошибок: если попытаться вызвать до загрузки элементов — ничего не произойдёт
-      // Можно включить дополнительный консольный вывод для отладки, если нужно.
     });
 
-    // Гарантированно обновление дисплея на старте
+    // Гарантированное отрисование стартового дисплея
     updateDisplay(0);
+
+    // Простейшая аудиодорожка-файлик
+    // (если браузер не поддерживает AudioContext, сигналы будут пропускаться)
+    function ensureAudioCompat() {
+      if (!audioCtx) {
+        try {
+          audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        } catch(e) {
+          // бета: audio не поддерживается
+        }
+      }
+    }
   </script>
 </body>
 </html>

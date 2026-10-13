@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <title>ГРАФАНА любимка</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root {
+      --btn: #5b2a83;       /* темно-фиолетовый для кнопок */
+      --btn-hover: #6a3d9f;  /* светлее для hover */
+    }
+
+    /* Фиолетовый фон с мотивирующими фразами на фоне */
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      background-color: #4b0082;
+      color: #fff;
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      overflow: hidden;
+    }
+
+    /* Декоративный фон с фразами (слой) */
+    .bg-phrases {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      overflow: hidden;
+      z-index: 0;
+      pointer-events: none;
+    }
+    .bg-phrases .phrase {
+      position: absolute;
+      white-space: nowrap;
+      color: rgba(255,255,255,0.25);
+      font-family: sans-serif;
+      user-select: none;
+      transform: rotate(0deg);
+    }
+
+    .wrap {
+      position: relative;
+      z-index: 1;
+      text-align: center;
+      padding: 28px;
+      border-radius: 16px;
+      max-width: 980px;
+      width: 92%;
+      background: rgba(0,0,0,0.55);
+      border: 1px solid rgba(255,255,255,0.15);
+      box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+      backdrop-filter: saturate(110%);
+    }
+
+    .title {
+      font-size: clamp(38px, 9vw, 96px);
+      font-weight: 900;
+      color: #f5e2d0;
+      letter-spacing: 6px;
+      text-transform: uppercase;
+      margin: 0 0 14px;
+    }
+
+    #display {
+      font-family: "Courier New", monospace;
+      font-weight: 900;
+      font-size: clamp(72px, 14vw, 170px);
+      color: #fff;
+      letter-spacing: 8px;
+      margin: 6px 0 14px;
+      text-shadow: 0 6px 0 rgba(0,0,0,0.25);
+    }
+
+    .quick-select {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin: 12px 0 14px;
+    }
+
+    .quick-select button {
+      padding: 12px 20px;
+      font-size: 20px;
+      font-weight: 700;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      background: var(--btn);
+      color: #fff;
+    }
+    .quick-select button:hover { background: var(--btn-hover); }
+
+    .controls {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-top: 6px;
+      padding: 10px;
+    }
+
+    label {
+      font-size: 18px;
+      color: #fff;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    input[type="number"] {
+      width: 110px;
+      padding: 12px;
+      font-size: 28px;
+      border-radius: 8px;
+      border: none;
+      outline: 2px solid rgba(255,255,255,.4);
+      background: rgba(255,255,255,.15);
+      color: #fff;
+    }
+
+    button {
+      padding: 12px 20px;
+      font-size: 20px;
+      font-weight: 700;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      background: var(--btn);
+      color: #fff;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.2);
+    }
+
+    button:disabled {
+      opacity: .5;
+      cursor: not-allowed;
+    }
+
+    .hint {
+      margin-top: 12px;
+      font-size: 13px;
+      opacity: .95;
+    }
+
+    .reminders {
+      margin-top: 18px;
+      padding: 12px;
+      border-radius: 8px;
+      background: rgba(0,0,0,0.25);
+      border: 1px solid rgba(255,255,255,.15);
+      text-align: left;
+    }
+    .reminders h4 { margin: 0 0 8px; font-size: 18px; }
+    .reminders .row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; margin-bottom: 8px; }
+    .reminders label { font-size: 14px; color: #fff; }
+    .reminders input { width: 90px; padding: 8px; font-size: 16px; }
+
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,.85);
+      color: #fff;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 14px;
+      z-index: 10000;
+      box-shadow: 0 4px 12px rgba(0,0,0,.3);
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-phrases" aria-hidden="true"></div>
+
+  <div class="wrap" aria-label="Таймер-Хэллоуин">
+    <div class="title">ГРАФАНА любимка</div>
+
+    <div id="display" aria-live="polite">00:00</div>
+
+    <div class="quick-select" aria-label="Быстрый выбор времени">
+      <button data-mins="1" title="1 минута">1 минута</button>
+      <button data-mins="5" title="5 минут">5 минут</button>
+      <button data-mins="10" title="10 минут">10 минут</button>
+      <button data-mins="15" title="15 минут">15 минут</button>
+    </div>
+
+    <div class="controls" aria-label="Управление таймером">
+      <label>Минуты:
+        <input id="minutes" type="number" min="0" max="999" value="0" />
+      </label>
+      <label>Секунды:
+        <input id="seconds" type="number" min="0" max="59" value="0" />
+      </label>
+      <button id="startBtn" aria-label="Старт">Старт</button>
+      <button id="pauseBtn" disabled aria-label="Пауза">Пауза</button>
+      <button id="resetBtn" disabled aria-label="Сброс">Сброс</button>
+    </div>
+
+    <div class="reminders" aria-label="Периодические напоминания">
+      <h4>Периодические напоминания</h4>
+      <div class="row" style="gap:8px;">
+        <label>Интервал, мин:
+          <input id="remInterval" type="number" min="1" value="15" />
+        </label>
+        <label>Длительность, ч:
+          <input id="remDuration" type="number" min="1" value="8" />
+        </label>
+        <button id="startRemindersBtn" aria-label="Запустить напоминания">Запуск</button>
+        <button id="stopRemindersBtn" aria-label="Остановить напоминания" disabled>Остановить</button>
+      </div>
+    </div>
+
+    <div class="hint" style="text-align:center; color:#e7d3b0;">
+      Время отображается в формате MM:SS. По окончании основного таймера звучит мелодия.
+    </div>
+  </div>
+
+  <script>
+    // Глобальные переменные таймера
+    let totalSeconds = 0;
+    let timerId = null;
+    let isRunning = false;
+
+    // Аудио
+    let audioCtx = null;
+    let melodyScheduled = false;
+
+    // Напоминания
+    let remIntervalMin = 15;
+    let remDurationHours = 8;
+    let remindersIntervalId = null;
+    let remindersEndTimeout = null;
+    let remindersActive = false;
+
+    // Фразы на фоне
+    const motivationalPhrases = [
+      "У тебя всё получится!", "Ты лучшая!", "Ты сильнее каждый день!",
+      "Доверяй себе!", "Ура победам!", "Не бойся начинать!", "Действуй сегодня!",
+      "Твои идеи достойны реализации!", "Каждый шаг приближает к цели!",
+      "Смелость твоя сила!", "Ты уже на пути к успеху!", "Ты вдохновение!",
+      "Соберись и двигайся вперед!", "Успех рядом, держись!", "Верь в себя!",
+      "Ты заслуживаешь лучшего!", "Сохраняй позитив и продолжай!", "Судьба любит смелых!",
+      "Возможности шире, чем ты думаешь!", "Продолжаай идти к мечте!",
+      "Ты способен на большее!", "Каждый день — новый шанс!", "Ты уникален(а)!"
+    ];
+
+    function pad(n){ return String(n).padStart(2, '0'); }
+
+    function updateDisplay(sec){
+      const m = Math.floor(sec / 60);
+      const s = sec % 60;
+      document.getElementById('display').textContent = pad(m) + ':' + pad(s);
+    }
+
+    function ensureAudio(){
+      if(!audioCtx){
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      audioCtx.resume();
+    }
+
+    function playTone(freq, duration, when){
+      const ctx = audioCtx;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      gain.value = 0.14;
+      gain.gain.value = 0.14;
+      osc.start(when);
+      gain.gain.setValueAtTime(0.0, when);
+      gain.gain.linearRampToValueAtTime(0.14, when + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.0001, when + duration);
+      osc.stop(when + duration + 0.02);
+    }
+
+    function playMelody(){
+      ensureAudio();
+      const melody = [
+        { freq: 261.63, dur: 0.25 },
+        { freq: 329.63, dur: 0.25 },
+        { freq: 392.00, dur: 0.25 },
+        { freq: 523.25, dur: 0.25 },
+        { freq: 587.33, dur: 0.25 },
+        { freq: 659.25, dur: 0.25 },
+        { freq: 698.46, dur: 0.25 },
+        { freq: 783.99, dur: 0.5 },
+        { freq: 523.25, dur: 0.25 },
+        { freq: 440.00, dur: 0.25 },
+        { freq: 392.00, dur: 0.25 },
+        { freq: 329.63, dur: 0.25 },
+        { freq: 261.63, dur: 0.5 }
+      ];
+      let t = audioCtx.currentTime;
+      melody.forEach(n => {
+        playTone(n.freq, n.dur, t);
+        t += n.dur;
+      });
+    }
+
+    function finishTimer(){
+      if (!melodyScheduled){
+        melodyScheduled = true;
+        playMelody();
+      } else {
+        melodyScheduled = false;
+      }
+    }
+
+    // Быстрый выбор времени
+    document.querySelectorAll('.quick-select button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const mins = parseInt(btn.getAttribute('data-mins'), 10);
+        const total = mins * 60;
+        totalSeconds = total;
+        updateDisplay(totalSeconds);
+        document.getElementById('minutes').value = mins;
+        document.getElementById('seconds').value = 0;
+        if (timerId){
+          clearInterval(timerId);
+          timerId = null;
+          isRunning = false;
+          document.getElementById('startBtn').disabled = false;
+          document.getElementById('pauseBtn').disabled = true;
+        }
+      });
+    });
+
+    // Инициализация после загрузки DOM
+    document.addEventListener('DOMContentLoaded', () => {
+      // Объявление элементов
+      const startBtn = document.getElementById('startBtn');
+      const pauseBtn = document.getElementById('pauseBtn');
+      const resetBtn = document.getElementById('resetBtn');
+      const startRemindersBtn = document.getElementById('startRemindersBtn');
+      const stopRemindersBtn = document.getElementById('stopRemindersBtn');
+
+      // Старт таймера
+      startBtn.addEventListener('click', () => {
+        const minsFromInput = parseInt(document.getElementById('minutes').value, 10) || 0;
+        const secsFromInput = parseInt(document.getElementById('seconds').value, 10) || 0;
+        if (minsFromInput < 0 || secsFromInput < 0 || secsFromInput > 59) return;
+        totalSeconds = minsFromInput * 60 + secsFromInput;
+        updateDisplay(totalSeconds);
+        if (timerId) clearInterval(timerId);
+        timerId = setInterval(() => {
+          if (totalSeconds <= 0){
+            clearInterval(timerId);
+            timerId = null;
+            isRunning = false;
+            startBtn.disabled = false;
+            pauseBtn.disabled = true;
+            resetBtn.disabled = false;
+            finishTimer();
+            return;
+          }
+          totalSeconds--;
+          updateDisplay(totalSeconds);
+        }, 1000);
+
+        isRunning = true;
+        startBtn.disabled = true;
+        pauseBtn.disabled = false;
+        resetBtn.disabled = false;
+      });
+
+      // Пауза
+      pauseBtn.addEventListener('click', () => {
+        if (timerId){
+          clearInterval(timerId);
+          timerId = null;
+          isRunning = false;
+          startBtn.disabled = false;
+          pauseBtn.disabled = true;
+        }
+      });
+
+      // Сброс
+      resetBtn.addEventListener('click', () => {
+        if (timerId) clearInterval(timerId);
+        timerId = null;
+        isRunning = false;
+        totalSeconds = 0;
+        document.getElementById('minutes').value = 0;
+        document.getElementById('seconds').value = 0;
+        updateDisplay(0);
+        startBtn.disabled = false;
+        pauseBtn.disabled = true;
+        resetBtn.disabled = true;
+      });
+
+      // Напоминания: запуск/остановка
+      startRemindersBtn.addEventListener('click', () => {
+        const interval = parseInt(document.getElementById('remInterval').value, 10);
+        const duration = parseInt(document.getElementById('remDuration').value, 10);
+        if (isNaN(interval) || interval <= 0 || isNaN(duration) || duration <= 0) return;
+
+        // остановить если уже активны
+        if (remindersActive) stopReminders();
+
+        remIntervalMin = interval;
+        remDurationHours = duration;
+
+        // Запуск напоминаний
+        triggerReminder();
+        remindersIntervalId = setInterval(triggerReminder, interval * 60 * 1000);
+        remindersEndTimeout = setTimeout(stopReminders, duration * 60 * 60 * 1000);
+
+        remindersActive = true;
+        startRemindersBtn.disabled = true;
+        stopRemindersBtn.disabled = false;
+        showToast(XXXINLINECODEXXX0XXXINLINECODEXXX);
+      });
+
+      stopRemindersBtn.addEventListener('click', stopReminders);
+
+      function stopReminders(){
+        if (remindersIntervalId) clearInterval(remindersIntervalId);
+        remindersIntervalId = null;
+        if (remindersEndTimeout) clearTimeout(remindersEndTimeout);
+        remindersEndTimeout = null;
+        remindersActive = false;
+        document.getElementById('startRemindersBtn').disabled = false;
+        document.getElementById('stopRemindersBtn').disabled = true;
+        showToast("Напоминания остановлены");
+      }
+    });
+
+    // Утилиты
+    function showToast(text){
+      const el = document.createElement('div');
+      el.className = 'toast';
+      el.textContent = text;
+      document.body.appendChild(el);
+      setTimeout(() => {
+        el.style.opacity = '0';
+        setTimeout(() => el.remove(), 400);
+      }, 3200);
+    }
+
+    function triggerReminder(){
+      const timeStr = new Date().toLocaleTimeString();
+      const msg = XXXINLINECODEXXX1XXXINLINECODEXXX;
+      if (window.Notification && Notification.permission === "granted") {
+        new Notification("Напоминание", { body: msg });
+      } else if (window.Notification && Notification.permission === "default") {
+        Notification.requestPermission().then(p => {
+          if (p === "granted") new Notification("Напоминание", { body: msg });
+          else showToast(msg);
+        });
+      } else {
+        showToast(msg);
+      }
+      // сигнал
+      triggerBeep();
+    }
+
+    function triggerBeep(){
+      ensureAudio();
+      const t0 = audioCtx.currentTime;
+      // короткая последовательность
+      playTone(392.00, 0.12, t0);
+      playTone(493.88, 0.12, t0 + 0.15);
+      playTone(587.33, 0.18, t0 + 0.30);
+    }
+
+    // Фоновые фразы
+    function generateBackgroundPhrases() {
+      const container = document.querySelector('.bg-phrases');
+      container.innerHTML = '';
+      const count = 80;
+      for (let i = 0; i < count; i++) {
+        const span = document.createElement('span');
+        span.className = 'phrase';
+        const text = motivationalPhrases[Math.floor(Math.random() * motivationalPhrases.length)];
+        span.textContent = text;
+        span.style.left = Math.random() * 100 + '%';
+        span.style.top = Math.random() * 100 + '%';
+        const size = 14 + Math.random() * 28;
+        span.style.fontSize = size + 'px';
+        span.style.opacity = (0.12 + Math.random() * 0.6).toFixed(2);
+        span.style.transform = 'rotate(' + (Math.random() * 40 - 20) + 'deg)';
+        container.appendChild(span);
+      }
+    }
+
+    // Запуск фраз после загрузки
+    window.addEventListener('load', generateBackgroundPhrases);
+
+    // Инициализация аудио
+    // Небольшой дебаг-подсказчик в консоль (опционально)
+    // console.log('Готово: таймер и напоминания и фон работают.');
+  </script>
+</body>
+</html>
